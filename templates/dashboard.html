@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ dataset.filename }} — DataLens</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Lucide & Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Plotly.js -->
+    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body data-dataset-id="{{ dataset.id }}">
+
+    <!-- 64px Main Navigation -->
+    <header class="app-navbar d-flex align-items-center">
+        <div class="container-fluid px-lg-4 d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-3">
+                <a class="navbar-brand" href="/">
+                    <span class="brand-icon"><i data-lucide="bar-chart-2" style="width: 15px; height: 15px;"></i></span>
+                    <span>DataLens</span>
+                </a>
+                <span class="text-muted d-none d-md-inline" style="font-size: 0.9rem;">/</span>
+                <span class="text-secondary d-none d-md-inline text-truncate" style="max-width: 280px; font-size: 0.88rem; font-weight: 500;">
+                    {{ dataset.filename }}
+                </span>
+            </div>
+
+            <nav class="d-none d-lg-flex align-items-center gap-1">
+                <a class="nav-link" href="#preview">Preview</a>
+                <a class="nav-link" href="#quality">Data Quality</a>
+                <a class="nav-link" href="#charts">Visual Analysis</a>
+                <a class="nav-link" href="#findings">Key Findings</a>
+                <a class="nav-link" href="#ask">Ask Your Data</a>
+            </nav>
+
+            <div class="d-flex align-items-center gap-2">
+                <a href="/upload" class="btn btn-secondary-custom btn-sm-custom">
+                    Upload Dataset
+                </a>
+                <button id="generatePdfBtn" class="btn btn-primary btn-sm-custom">
+                    <i data-lucide="file-down" style="width: 14px; height: 14px; vertical-align: -2px; margin-right: 4px;"></i> Generate Report
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Dashboard Container -->
+    <main class="container-fluid px-lg-4 py-4">
+
+        <!-- 1. Dataset Header -->
+        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center pb-3 mb-3 border-bottom gap-2">
+            <div>
+                <h1 style="font-size: 1.35rem; font-weight: 700; margin-bottom: 2px;">{{ dataset.filename }}</h1>
+                <div class="text-secondary" style="font-size: 0.82rem;">
+                    Format: <span class="text-uppercase fw-semibold text-dark">{{ dataset.file_type }}</span> &bull; 
+                    Uploaded on {{ dataset.uploaded_at }} &bull; 
+                    ID: <code>{{ dataset.id }}</code>
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge-clean badge-good">Validated</span>
+                <a href="#ask" class="btn btn-secondary-custom btn-sm-custom">
+                    Ask Data
+                </a>
+            </div>
+        </div>
+
+        <!-- 2. Summary Metric Cards (Clean, No Giant Icons, No Gradients) -->
+        <div class="row g-2 section-gap">
+            <div class="col-6 col-md-3">
+                <div class="metric-card">
+                    <div class="metric-label">TOTAL RECORDS</div>
+                    <div class="metric-value">{{ "{:,}".format(dataset.rows) }}</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="metric-card">
+                    <div class="metric-label">TOTAL COLUMNS</div>
+                    <div class="metric-value">{{ dataset.columns }}</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="metric-card">
+                    <div class="metric-label">MISSING VALUES</div>
+                    <div class="metric-value" style="color: {% if dataset.missing_values > 0 %}var(--warning){% else %}var(--success){% endif %};">
+                        {{ "{:,}".format(dataset.missing_values) }}
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="metric-card">
+                    <div class="metric-label">DUPLICATE ROWS</div>
+                    <div class="metric-value" style="color: {% if dataset.duplicate_rows > 0 %}var(--danger){% else %}var(--success){% endif %};">
+                        {{ "{:,}".format(dataset.duplicate_rows) }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Dataset Preview Section -->
+        <div class="custom-card p-3 section-gap" id="preview">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h2 style="font-size: 1rem; font-weight: 700; margin-bottom: 2px;">Dataset preview</h2>
+                    <span class="text-secondary" style="font-size: 0.8rem;">Showing first 15 records with detected data types</span>
+                </div>
+                <span class="badge-clean badge-neutral" id="previewCountBadge">Loading...</span>
+            </div>
+            
+            <div class="table-responsive border rounded-2" style="max-height: 380px;">
+                <table class="custom-table table mb-0" id="previewTable">
+                    <thead>
+                        <tr id="previewTableHead"></tr>
+                    </thead>
+                    <tbody id="previewTableBody">
+                        <tr><td class="text-center py-4 text-secondary" colspan="10">Loading rows...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 4. Data Quality Section -->
+        <div class="custom-card p-3 section-gap" id="quality">
+            <div class="mb-3">
+                <h2 style="font-size: 1rem; font-weight: 700; margin-bottom: 2px;">Data quality</h2>
+                <span class="text-secondary" style="font-size: 0.8rem;">Inspection of column completeness, null counts, and uniqueness</span>
+            </div>
+
+            <!-- Cleaning Notice Banner -->
+            <div id="cleaningNotice" class="alert alert-light border rounded-2 p-2 px-3 mb-3 d-none" style="font-size: 0.84rem;">
+                <div class="d-flex align-items-center gap-2">
+                    <i data-lucide="info" style="width: 16px; height: 16px; color: var(--primary);"></i>
+                    <span id="cleaningNoticeText"></span>
+                </div>
+            </div>
+
+            <div class="table-responsive border rounded-2">
+                <table class="custom-table table mb-0" id="qualityTable">
+                    <thead>
+                        <tr>
+                            <th>Column</th>
+                            <th>Data Type</th>
+                            <th class="text-end">Missing Cells</th>
+                            <th class="text-end">Missing %</th>
+                            <th class="text-end">Unique Values</th>
+                            <th class="text-center">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="qualityTableBody">
+                        <tr><td class="text-center py-4 text-secondary" colspan="6">Auditing quality...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 5. Visual Analysis Section (Useful Charts) -->
+        <div class="custom-card p-3 section-gap" id="charts">
+            <div class="mb-3">
+                <h2 style="font-size: 1rem; font-weight: 700; margin-bottom: 2px;">Visual analysis</h2>
+                <span class="text-secondary" style="font-size: 0.8rem;">Automated charts adapted to column distributions and relationships</span>
+            </div>
+
+            <div class="row g-3" id="chartsContainer">
+                <div class="col-12 text-center py-4 text-secondary" id="chartsLoading">
+                    <div class="spinner-border spinner-border-sm text-primary mb-2" role="status"></div>
+                    <div style="font-size: 0.84rem;">Rendering interactive charts...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6. Key Findings Section (Non-Marketing, Factual) -->
+        <div class="custom-card p-3 section-gap" id="findings">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h2 style="font-size: 1rem; font-weight: 700; margin-bottom: 2px;">Key findings</h2>
+                    <span class="text-secondary" style="font-size: 0.8rem;" id="aiModeIndicator">Concise observations grounded in calculated values</span>
+                </div>
+                <button id="regenerateAiBtn" class="btn btn-secondary-custom btn-sm-custom">
+                    Refresh
+                </button>
+            </div>
+
+            <div id="aiInsightsContainer" class="p-3 bg-light border rounded-2" style="min-height: 120px;">
+                <div class="text-center py-4" id="aiLoadingIndicator">
+                    <span class="spinner-border spinner-border-sm text-primary me-2"></span>
+                    <span class="text-secondary" style="font-size: 0.84rem;">Computing findings...</span>
+                </div>
+                <div id="aiInsightsText" class="findings-content d-none"></div>
+            </div>
+        </div>
+
+        <!-- 7. Ask Your Data Section -->
+        <div class="custom-card p-3 section-gap" id="ask">
+            <div class="mb-3">
+                <h2 style="font-size: 1rem; font-weight: 700; margin-bottom: 2px;">Ask your data</h2>
+                <span class="text-secondary" style="font-size: 0.8rem;">Evaluate questions evaluated directly from dataset records</span>
+            </div>
+
+            <!-- Input Query Form -->
+            <form id="askForm" class="mb-2">
+                <div class="query-input-group">
+                    <input type="text" id="userQuestion" class="query-input" placeholder="Ask a question about your dataset..." required autocomplete="off">
+                    <button class="btn btn-primary btn-sm-custom" type="submit" id="askBtn">
+                        Query
+                    </button>
+                </div>
+            </form>
+
+            <!-- Exact Suggested Questions -->
+            <div class="d-flex flex-wrap gap-1 mb-3" id="questionChips">
+                <button type="button" class="chip-btn" onclick="askPreset('What is the average sales?')">What is the average sales?</button>
+                <button type="button" class="chip-btn" onclick="askPreset('Which region has the highest sales?')">Which region has the highest sales?</button>
+                <button type="button" class="chip-btn" onclick="askPreset('How many missing values are present?')">How many missing values are present?</button>
+                <button type="button" class="chip-btn" onclick="askPreset('What is the median rating?')">What is the median rating?</button>
+            </div>
+
+            <!-- Query Output Card -->
+            <div id="answerBox" class="p-3 bg-light border rounded-2" style="min-height: 90px;">
+                <div class="text-secondary text-center py-2" style="font-size: 0.82rem;" id="answerPlaceholder">
+                    Type a question above or click a suggestion to calculate.
+                </div>
+                <div id="answerContent" class="d-none">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="badge-clean badge-neutral">Result</span>
+                        <small class="text-muted" style="font-size: 0.75rem;" id="answerMethod"></small>
+                    </div>
+                    <div id="answerText" class="text-dark" style="font-size: 0.88rem;"></div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- PDF Generation Modal -->
+    <div class="modal fade" id="pdfModal" tabindex="-1" aria-labelledby="pdfModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content custom-card p-3 border-0 shadow">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold" id="pdfModalLabel" style="font-size: 1.1rem;">Generate Report</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center py-4">
+                    <div id="pdfLoadingState">
+                        <div class="spinner-border text-primary mb-3" style="width: 2.5rem; height: 2.5rem;" role="status"></div>
+                        <h6 class="fw-bold text-dark mb-1">Generating PDF report...</h6>
+                        <p class="text-secondary mb-0" style="font-size: 0.82rem;">Building visual charts and statistical tables.</p>
+                    </div>
+                    <div id="pdfSuccessState" class="d-none">
+                        <i data-lucide="check-circle" style="width: 36px; height: 36px; color: var(--success); margin: 0 auto 12px; display: block;"></i>
+                        <h6 class="fw-bold text-dark mb-1">Report Ready</h6>
+                        <p class="text-secondary mb-3" style="font-size: 0.82rem;">Your visual data analysis report has been generated.</p>
+                        <a id="downloadPdfLink" href="#" class="btn btn-primary" download>
+                            Download PDF
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS & Lucide Icons -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        if (window.lucide) {
+            lucide.createIcons();
+        }
+    </script>
+    <script src="/static/js/dashboard.js"></script>
+</body>
+</html>

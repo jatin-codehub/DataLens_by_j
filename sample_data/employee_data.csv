@@ -1,0 +1,16 @@
+Employee_ID,Name,Department,Role,Years_Experience,Salary,Performance_Rating,Remote_Work
+E101,John Doe,Engineering,Senior Software Engineer,6,92000,4.5,Yes
+E102,Jane Smith,Marketing,Content Strategist,4,65000,4.2,No
+E103,Alice Johnson,Data Science,Data Analyst,3,72000,4.6,Yes
+E104,Bob Brown,Engineering,Frontend Developer,2,60000,3.8,Yes
+E105,Charlie Wilson,Sales,Account Executive,5,78000,4.1,No
+E106,Diana Prince,Engineering,Tech Lead,9,115000,4.9,Yes
+E107,Evan Wright,Human Resources,HR Generalist,4,58000,4.0,No
+E108,Fiona Gallagher,Data Science,Machine Learning Engineer,5,95000,4.7,Yes
+E109,George Clark,Sales,Sales Representative,2,52000,3.9,No
+E110,Hannah Abbott,Engineering,DevOps Engineer,7,98000,4.4,Yes
+E111,Ian Malcolm,Marketing,Growth Marketer,3,63000,4.0,Yes
+E112,Julia Roberts,Data Science,BI Developer,4,74000,4.3,No
+E113,Kevin Bacon,Engineering,Backend Developer,4,80000,4.2,Yes
+E114,Laura Croft,Human Resources,Recruiting Specialist,3,56000,3.9,No
+E115,Mike Tyson,Sales,Regional Sales Lead,8,90000,4.6,No

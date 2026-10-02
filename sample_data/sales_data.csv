@@ -1,0 +1,31 @@
+Order_ID,Date,Product,Category,Quantity,Price,Region,Sales
+1001,2026-01-05,Wireless Mouse,Electronics,2,25.00,North,50.00
+1002,2026-01-07,Mechanical Keyboard,Electronics,1,85.00,West,85.00
+1003,2026-01-10,Desk Chair,Furniture,1,150.00,South,150.00
+1004,2026-01-12,Monitor Stand,Office Supplies,3,30.00,East,90.00
+1005,2026-01-15,USB-C Hub,Electronics,2,45.00,North,90.00
+1006,2026-01-18,Gaming Headset,Electronics,1,75.00,West,75.00
+1007,2026-01-20,Notebook 3-Pack,Office Supplies,5,12.00,South,60.00
+1008,2026-01-22,LED Desk Lamp,Furniture,2,40.00,East,80.00
+1009,2026-01-25,External SSD 1TB,Electronics,1,110.00,North,110.00
+1010,2026-01-28,Standing Desk Mat,Furniture,2,35.00,South,70.00
+1011,2026-02-02,Webcam 1080p,Electronics,1,65.00,East,65.00
+1012,2026-02-05,Gel Pens Pack,Office Supplies,4,8.00,West,32.00
+1013,2026-02-08,Ergonomic Mousepad,Office Supplies,3,15.00,North,45.00
+1014,2026-02-12,Laptop Stand,Furniture,2,55.00,South,110.00
+1015,2026-02-15,HDMI Cable 2m,Electronics,4,10.00,West,40.00
+1016,2026-02-18,Wireless Earbuds,Electronics,1,95.00,North,95.00
+1017,2026-02-22,Whiteboard Markers,Office Supplies,6,7.50,East,45.00
+1018,2026-02-25,Bookshelf 3-Tier,Furniture,1,120.00,South,120.00
+1019,2026-03-01,Bluetooth Speaker,Electronics,2,50.00,West,100.00
+1020,2026-03-05,Wireless Mouse,Electronics,3,25.00,North,75.00
+1021,2026-03-08,Desk Organizer,Office Supplies,2,22.00,East,44.00
+1022,2026-03-12,Mechanical Keyboard,Electronics,2,85.00,South,170.00
+1023,2026-03-15,Document Scanner,Electronics,1,180.00,West,180.00
+1024,2026-03-18,A4 Paper Ream,Office Supplies,10,6.00,North,60.00
+1025,2026-03-22,Office Chair Armrests,Furniture,1,45.00,South,45.00
+1026,2026-03-25,Power Strip Surge,Electronics,3,28.00,East,84.00
+1027,2026-03-28,Sticky Notes Set,Office Supplies,8,4.50,West,36.00
+1028,2026-04-02,Desk Fan,Furniture,2,30.00,North,60.00
+1029,2026-04-05,USB Flash Drive 64GB,Electronics,5,14.00,South,70.00
+1030,2026-04-08,Wireless Mouse,Electronics,1,25.00,West,25.00

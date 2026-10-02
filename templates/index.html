@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DataLens — Understand your data. Faster.</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Lucide Icons & Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+    <!-- 64px Navbar -->
+    <header class="app-navbar d-flex align-items-center">
+        <div class="container d-flex align-items-center justify-content-between">
+            <a class="navbar-brand" href="/">
+                <span class="brand-icon"><i data-lucide="bar-chart-2" style="width: 15px; height: 15px;"></i></span>
+                <span>DataLens</span>
+            </a>
+            <nav class="d-none d-md-flex align-items-center gap-1">
+                <a class="nav-link active" href="/">Home</a>
+                <a class="nav-link" href="#features">Features</a>
+                <a class="nav-link" href="#samples">Sample Data</a>
+            </nav>
+            <div>
+                <a href="/upload" class="btn btn-primary btn-sm-custom">
+                    Upload Dataset
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Compact Hero Section (40-50% viewport) -->
+    <section class="hero-compact">
+        <div class="container text-center">
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <h1 class="hero-headline mb-3">Understand your data. Faster.</h1>
+                    <p class="hero-subtext mx-auto mb-4">
+                        Upload a CSV or Excel file to explore patterns, check data quality, and generate a clear analysis report.
+                    </p>
+                    <div class="d-flex justify-content-center gap-2 mb-4">
+                        <a href="/upload" class="btn btn-primary">
+                            Upload Dataset
+                        </a>
+                        <a href="#samples" class="btn btn-secondary-custom">
+                            Explore Sample
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Real Product Analytics Preview Section -->
+            <div class="row justify-content-center mt-2">
+                <div class="col-lg-10 text-start">
+                    <div class="product-preview-wrap">
+                        <!-- Preview Header -->
+                        <div class="d-flex align-items-center justify-content-between pb-3 mb-3 border-bottom">
+                            <div>
+                                <span class="fw-bold text-dark" style="font-size: 0.92rem;">Dataset Overview</span>
+                                <span class="text-secondary ms-2" style="font-size: 0.8rem;">&bull; sales_q1_data.csv</span>
+                            </div>
+                            <span class="badge-clean badge-good">Validated</span>
+                        </div>
+
+                        <!-- 4 Summary Metric Cards -->
+                        <div class="row g-2 mb-4">
+                            <div class="col-6 col-md-3">
+                                <div class="metric-card">
+                                    <div class="metric-label">Total Records</div>
+                                    <div class="metric-value">500</div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="metric-card">
+                                    <div class="metric-label">Columns</div>
+                                    <div class="metric-value">12</div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="metric-card">
+                                    <div class="metric-label">Missing Values</div>
+                                    <div class="metric-value" style="color: var(--success);">0</div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="metric-card">
+                                    <div class="metric-label">Duplicates</div>
+                                    <div class="metric-value" style="color: var(--warning);">2</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Preview Visualizations Grid -->
+                        <div class="row g-3">
+                            <!-- Left: Sales by Region Bar Chart -->
+                            <div class="col-md-6">
+                                <div class="p-3 border rounded-2" style="background-color: #FFFFFF;">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <span class="fw-bold text-dark" style="font-size: 0.84rem;">Sales by Region</span>
+                                        <span class="text-secondary" style="font-size: 0.74rem;">Categorical Distribution</span>
+                                    </div>
+                                    <div class="d-flex flex-column gap-2" style="font-size: 0.8rem;">
+                                        <div>
+                                            <div class="d-flex justify-content-between mb-1 text-secondary">
+                                                <span>North Region</span>
+                                                <span class="fw-semibold text-dark">$45,200 (42%)</span>
+                                            </div>
+                                            <div class="progress" style="height: 6px; background-color: var(--border);">
+                                                <div class="progress-bar" style="width: 42%; background-color: var(--primary);"></div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div class="d-flex justify-content-between mb-1 text-secondary">
+                                                <span>West Region</span>
+                                                <span class="fw-semibold text-dark">$29,800 (28%)</span>
+                                            </div>
+                                            <div class="progress" style="height: 6px; background-color: var(--border);">
+                                                <div class="progress-bar" style="width: 28%; background-color: var(--primary);"></div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div class="d-flex justify-content-between mb-1 text-secondary">
+                                                <span>East Region</span>
+                                                <span class="fw-semibold text-dark">$18,400 (18%)</span>
+                                            </div>
+                                            <div class="progress" style="height: 6px; background-color: var(--border);">
+                                                <div class="progress-bar" style="width: 18%; background-color: var(--primary);"></div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div class="d-flex justify-content-between mb-1 text-secondary">
+                                                <span>South Region</span>
+                                                <span class="fw-semibold text-dark">$12,100 (12%)</span>
+                                            </div>
+                                            <div class="progress" style="height: 6px; background-color: var(--border);">
+                                                <div class="progress-bar" style="width: 12%; background-color: var(--primary);"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Right: Revenue Distribution Histogram -->
+                            <div class="col-md-6">
+                                <div class="p-3 border rounded-2" style="background-color: #FFFFFF;">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <span class="fw-bold text-dark" style="font-size: 0.84rem;">Revenue Distribution</span>
+                                        <span class="text-secondary" style="font-size: 0.74rem;">Numerical Histogram</span>
+                                    </div>
+                                    <!-- Stylized Histogram SVG -->
+                                    <div style="height: 95px;" class="d-flex align-items-end justify-content-between pt-2 border-bottom">
+                                        <div style="width: 12%; height: 28%; background-color: var(--primary); border-radius: 2px 2px 0 0;" title="$0-$200"></div>
+                                        <div style="width: 12%; height: 52%; background-color: var(--primary); border-radius: 2px 2px 0 0;" title="$200-$400"></div>
+                                        <div style="width: 12%; height: 88%; background-color: var(--primary); border-radius: 2px 2px 0 0;" title="$400-$600"></div>
+                                        <div style="width: 12%; height: 95%; background-color: var(--primary); border-radius: 2px 2px 0 0;" title="$600-$800"></div>
+                                        <div style="width: 12%; height: 60%; background-color: var(--primary); border-radius: 2px 2px 0 0;" title="$800-$1000"></div>
+                                        <div style="width: 12%; height: 35%; background-color: var(--primary); border-radius: 2px 2px 0 0;" title="$1000-$1200"></div>
+                                        <div style="width: 12%; height: 16%; background-color: var(--primary); border-radius: 2px 2px 0 0;" title="$1200+"></div>
+                                    </div>
+                                    <div class="d-flex justify-content-between text-secondary pt-1" style="font-size: 0.72rem;">
+                                        <span>$0</span>
+                                        <span>Median: $620</span>
+                                        <span>$1,400</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Practical Features Section -->
+    <section id="features" class="py-5">
+        <div class="container">
+            <div class="text-center mb-4">
+                <h2 style="font-size: 1.45rem; font-weight: 700;">Practical analysis features</h2>
+                <p class="text-secondary" style="font-size: 0.88rem;">Essential tools designed to examine, inspect, and summarize structured datasets.</p>
+            </div>
+            <div class="row g-3">
+                <div class="col-md-6 col-lg-4">
+                    <div class="feature-box">
+                        <div class="feature-icon-wrapper"><i data-lucide="calculator"></i></div>
+                        <h3 class="feature-title">Dataset Analysis</h3>
+                        <p class="feature-desc">Understand columns, types and statistics.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="feature-box">
+                        <div class="feature-icon-wrapper"><i data-lucide="shield-alert"></i></div>
+                        <h3 class="feature-title">Data Quality</h3>
+                        <p class="feature-desc">Find missing values and duplicate records.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="feature-box">
+                        <div class="feature-icon-wrapper"><i data-lucide="bar-chart-2"></i></div>
+                        <h3 class="feature-title">Visual Analysis</h3>
+                        <p class="feature-desc">Explore useful charts automatically.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="feature-box">
+                        <div class="feature-icon-wrapper"><i data-lucide="sparkles"></i></div>
+                        <h3 class="feature-title">AI Insights</h3>
+                        <p class="feature-desc">Generate concise findings from the dataset.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="feature-box">
+                        <div class="feature-icon-wrapper"><i data-lucide="message-square"></i></div>
+                        <h3 class="feature-title">Ask Your Data</h3>
+                        <p class="feature-desc">Ask questions about your uploaded data.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="feature-box">
+                        <div class="feature-icon-wrapper"><i data-lucide="file-text"></i></div>
+                        <h3 class="feature-title">PDF Reports</h3>
+                        <p class="feature-desc">Export a clean analysis report.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Preloaded Sample Datasets -->
+    <section id="samples" class="py-5" style="border-top: 1px solid var(--border); background-color: var(--surface);">
+        <div class="container">
+            <div class="text-center mb-4">
+                <h2 style="font-size: 1.45rem; font-weight: 700;">Explore sample datasets</h2>
+                <p class="text-secondary" style="font-size: 0.88rem;">Test the application instantly using pre-configured synthetic datasets.</p>
+            </div>
+            <div class="row g-3 justify-content-center">
+                <!-- Sample 1 -->
+                <div class="col-md-4">
+                    <div class="feature-box d-flex flex-column">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="fw-bold text-dark" style="font-size: 0.95rem;">Student Performance</span>
+                            <span class="badge-clean badge-neutral">CSV</span>
+                        </div>
+                        <p class="feature-desc mb-3">Academic records with exam scores, study hours, attendance, and departments.</p>
+                        <button class="btn btn-outline-custom mt-auto w-100 btn-sm-custom" onclick="loadSampleDataset('student_performance.csv', this)">
+                            Load Dataset
+                        </button>
+                    </div>
+                </div>
+                <!-- Sample 2 -->
+                <div class="col-md-4">
+                    <div class="feature-box d-flex flex-column">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="fw-bold text-dark" style="font-size: 0.95rem;">Retail Sales</span>
+                            <span class="badge-clean badge-neutral">CSV</span>
+                        </div>
+                        <p class="feature-desc mb-3">Order transactions with product categories, quantities, pricing, and regional volume.</p>
+                        <button class="btn btn-outline-custom mt-auto w-100 btn-sm-custom" onclick="loadSampleDataset('sales_data.csv', this)">
+                            Load Dataset
+                        </button>
+                    </div>
+                </div>
+                <!-- Sample 3 -->
+                <div class="col-md-4">
+                    <div class="feature-box d-flex flex-column">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="fw-bold text-dark" style="font-size: 0.95rem;">Employee Data</span>
+                            <span class="badge-clean badge-neutral">CSV</span>
+                        </div>
+                        <p class="feature-desc mb-3">HR directory covering departments, salary bands, experience, and ratings.</p>
+                        <button class="btn btn-outline-custom mt-auto w-100 btn-sm-custom" onclick="loadSampleDataset('employee_data.csv', this)">
+                            Load Dataset
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Clean Footer -->
+    <footer class="app-footer">
+        <div class="container d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2">
+            <span>&copy; 2026 DataLens. Practical dataset analysis.</span>
+            <span>Flask &bull; Pandas &bull; Plotly &bull; ReportLab</span>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5 JS & Lucide Icons -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        if (window.lucide) {
+            lucide.createIcons();
+        }
+
+        function loadSampleDataset(filename, btn) {
+            btn.disabled = true;
+            btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span>Loading...`;
+            
+            fetch('/api/upload-sample', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ filename: filename })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = `/dashboard/${data.dataset_id}`;
+                } else {
+                    alert('Error loading dataset: ' + (data.error || 'Unknown issue'));
+                    btn.disabled = false;
+                    btn.textContent = 'Load Dataset';
+                }
+            })
+            .catch(() => {
+                alert('Connection error loading dataset.');
+                btn.disabled = false;
+                btn.textContent = 'Load Dataset';
+            });
+        }
+    </script>
+</body>
+</html>

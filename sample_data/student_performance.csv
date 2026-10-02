@@ -1,0 +1,73 @@
+Student_ID,Name,Age,Gender,Department,Attendance,Math,Physics,Programming,Study_Hours
+101,Aarav Sharma,20,Male,Computer Science,88,85,78,92,6.5
+102,Diya Patel,21,Female,Information Technology,92,90,88,95,7.0
+103,Rohan Verma,19,Male,Computer Science,74,62,58,70,4.0
+104,Ananya Iyer,20,Female,Electronics,95,94,91,89,8.0
+105,Vivaan Reddy,22,Male,Mechanical,65,55,60,50,3.5
+106,Sanya Kapoor,20,Female,Computer Science,85,78,82,88,6.0
+107,Ishaan Nair,21,Male,Information Technology,78,70,72,75,5.0
+108,Meera Joshi,19,Female,Computer Science,90,88,85,91,7.5
+109,Kabir Sen,21,Male,Electronics,82,75,70,68,5.5
+110,Tara Choudhury,20,Female,Computer Science,96,98,95,99,9.0
+111,Aditya Rao,22,Male,Information Technology,70,58,62,65,4.0
+112,Pooja Gupta,21,Female,Electronics,89,82,79,84,6.5
+113,Aryan Mehta,20,Male,Computer Science,84,80,75,85,6.0
+114,Kavya Kulkarni,19,Female,Information Technology,91,87,84,90,7.0
+115,Siddharth Das,22,Male,Mechanical,60,48,52,55,3.0
+116,Rhea Saxena,20,Female,Computer Science,87,85,80,92,6.5
+117,Devansh Bhat,21,Male,Electronics,76,68,74,70,5.0
+118,Nisha Malhotra,20,Female,Computer Science,93,92,89,94,8.0
+119,Arjun Pillai,22,Male,Information Technology,68,54,58,60,3.5
+120,Tanvi Deshmukh,21,Female,Computer Science,88,81,85,87,6.5
+121,Varun Chopra,20,Male,Electronics,80,72,78,76,5.5
+122,Shreya Ghosh,19,Female,Computer Science,94,95,90,96,8.5
+123,Harsh Pandey,21,Male,Information Technology,72,64,60,68,4.5
+124,Kriti Singhania,20,Female,Computer Science,86,83,81,89,6.0
+125,Manish Tiwari,22,Male,Mechanical,58,45,50,48,2.5
+126,Avani Bansal,21,Female,Electronics,90,86,88,85,7.0
+127,Yash Agarwal,20,Male,Computer Science,82,79,76,82,5.5
+128,Sneha Bhatt,19,Female,Information Technology,89,84,82,88,6.5
+129,Gaurav Mishra,21,Male,Computer Science,75,69,65,72,4.5
+130,Priyanka Roy,20,Female,Electronics,92,88,86,90,7.5
+131,Nikhil Nambiar,22,Male,Mechanical,64,52,56,58,3.5
+132,Simran Chadha,21,Female,Computer Science,85,80,82,86,6.0
+133,Karan Gill,20,Male,Information Technology,79,71,75,78,5.0
+134,Bhavna Sethi,19,Female,Computer Science,91,89,87,93,7.5
+135,Akash Hegde,21,Male,Electronics,73,65,68,69,4.5
+136,Ritika Jain,20,Female,Information Technology,88,82,80,85,6.5
+137,Rahul Menon,22,Male,Computer Science,,76,72,80,5.5
+138,Anjali Dubey,21,Female,Electronics,93,90,87,91,7.5
+139,Pranav Khurana,20,Male,Mechanical,66,58,62,54,3.5
+140,Divya Swaminathan,19,Female,Computer Science,95,96,93,97,8.5
+141,Mohit Vohra,21,Male,Information Technology,74,67,65,70,4.5
+142,Isha Kaul,20,Female,Computer Science,87,83,85,88,6.5
+143,Rajat Mathur,22,Male,Electronics,77,70,72,74,5.0
+144,Nandini Somani,21,Female,Information Technology,,86,83,89,7.0
+145,Sameer Chauhan,20,Male,Computer Science,81,75,79,83,5.5
+146,Payal Mittal,19,Female,Mechanical,71,60,64,62,4.0
+147,Kunal Taneja,21,Male,Computer Science,83,78,74,80,6.0
+148,Swati Rawat,20,Female,Electronics,90,87,85,88,7.0
+149,Abhishek Sen,22,Male,Information Technology,69,56,60,63,3.5
+150,Radhika Goel,21,Female,Computer Science,92,91,89,95,8.0
+151,Suraj Yadav,20,Male,Mechanical,63,50,54,52,3.0
+152,Aparna Mohan,19,Female,Information Technology,88,85,81,87,6.5
+153,Chetan Anand,21,Male,Computer Science,78,72,70,76,5.0
+154,Jyoti Madhav,20,Female,Electronics,89,84,86,88,7.0
+155,Tarun Bhatia,22,Male,Computer Science,80,74,77,81,5.5
+156,Pallavi Trivedi,21,Female,Information Technology,91,88,85,90,7.5
+157,Deepak Soni,20,Male,Mechanical,67,55,59,57,3.5
+158,Alka Pandey,19,Female,Computer Science,94,93,91,96,8.5
+159,Hemant Rathi,21,Male,Electronics,75,69,71,73,5.0
+160,Monika Bose,20,Female,Computer Science,86,82,80,,6.0
+161,Vikas Grover,22,Male,Information Technology,70,62,65,68,4.0
+162,Garima Ahuja,21,Female,Electronics,92,89,86,90,7.5
+163,Saurabh Shukla,20,Male,Computer Science,84,79,81,85,6.0
+164,Prachi Aggarwal,19,Female,Information Technology,90,87,83,89,7.0
+165,Naveen Jindal,22,Male,Mechanical,62,49,53,51,3.0
+166,Juhi Chawla,21,Female,Computer Science,87,84,86,89,6.5
+167,Mayank Rastogi,20,Male,Electronics,79,73,75,77,5.5
+168,Sonali Kadam,19,Female,Computer Science,93,91,88,94,8.0
+169,Ashwin Pai,21,Male,Information Technology,71,63,61,67,4.0
+170,Natasha Fernandes,20,Female,Electronics,91,88,87,90,7.0
+101,Aarav Sharma,20,Male,Computer Science,88,85,78,92,6.5
+102,Diya Patel,21,Female,Information Technology,92,90,88,95,7.0
