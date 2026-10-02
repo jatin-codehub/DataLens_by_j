@@ -27,14 +27,19 @@ from analysis.visualizer import generate_visualizations
 from ai.insights import generate_ai_insights, answer_dataset_question
 from reports.pdf_generator import generate_pdf_report
 
-# Initialize Flask application
-app = Flask(__name__)
+BASE_DIR = Path(__file__).resolve().parent
+
+# Initialize Flask application with explicit absolute paths
+app = Flask(
+    __name__,
+    template_folder=str(BASE_DIR / 'templates'),
+    static_folder=str(BASE_DIR / 'static')
+)
 app.config.from_object(Config)
 
-# Ensure necessary directories exist
+# Ensure runtime directories exist (routed to /tmp on serverless like Vercel)
 os.makedirs(Config.UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(Config.REPORTS_FOLDER, exist_ok=True)
-os.makedirs(Config.SAMPLE_DATA_FOLDER, exist_ok=True)
 
 # Initialize SQLite database schema
 init_db()

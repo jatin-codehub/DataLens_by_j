@@ -17,6 +17,8 @@ uploads/*
 !uploads/.gitkeep
 generated_reports/*
 !generated_reports/.gitkeep
+test_reports/
+
 
 # IDE configs
 .vscode/

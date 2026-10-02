@@ -1,7 +1,11 @@
+import os
 import sqlite3
 import json
+from pathlib import Path
 from contextlib import contextmanager
 from config import Config
+
+SCHEMA_PATH = Path(__file__).resolve().parent / 'schema.sql'
 
 @contextmanager
 def get_db_connection():
@@ -16,9 +20,11 @@ def get_db_connection():
 
 def init_db():
     """Create database tables based on schema.sql if they do not exist."""
+    os.makedirs(os.path.dirname(str(Config.DATABASE_PATH)), exist_ok=True)
     with get_db_connection() as conn:
-        with open('database/schema.sql', 'r', encoding='utf-8') as f:
+        with open(SCHEMA_PATH, 'r', encoding='utf-8') as f:
             conn.executescript(f.read())
+
 
 def save_dataset_metadata(dataset_id, filename, file_type, rows, cols, missing, duplicates):
     """Save metadata of an uploaded dataset."""
