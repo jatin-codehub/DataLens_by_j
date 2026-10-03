@@ -208,6 +208,18 @@ def answer_dataset_question(df, question):
                         "method": f"Calculated via Pandas `df['{col}'].median()`"
                     }
 
+    # 5b. Total / Sum inquiry
+    if any(w in q for w in ["total", "sum"]) and not any(p in q for p in ["total rows", "total columns", "total missing", "how many"]):
+        for col in df.columns:
+            if match_col(col):
+                if pd.api.types.is_numeric_dtype(df[col]):
+                    sum_val = round(float(df[col].sum()), 2)
+                    return {
+                        "question": question,
+                        "answer": f"The total (sum) of **{col}** is **{sum_val:,.2f}**.",
+                        "method": f"Calculated via Pandas `df['{col}'].sum()`"
+                    }
+
     # 6. Column-specific inquiries (Average / Mean)
     if "average" in q or "mean" in q:
         for col in df.columns:

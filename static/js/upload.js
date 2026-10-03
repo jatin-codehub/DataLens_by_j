@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const errorAlert = document.getElementById('errorAlert');
     const errorMessage = document.getElementById('errorMessage');
 
-    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+    const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MB
     const ALLOWED_EXTS = ['.csv', '.xlsx', '.xls'];
 
     let selectedFile = null;
@@ -50,7 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (file.size > MAX_FILE_SIZE) {
-            showError(`File is too large (${formatBytes(file.size)}). Maximum allowed file size is 10 MB.`);
+            showError(`File is too large (${formatBytes(file.size)}). Maximum allowed file size is 25 MB.`);
             resetSelection();
             return;
         }
@@ -133,8 +133,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
 
             if (response.ok && data.success) {
-                // Redirect directly to dashboard
-                window.location.href = `/dashboard/${data.dataset_id}`;
+                const sid = data.session_id || data.dataset_id;
+                window.location.href = `/dashboard/${sid}`;
             } else {
                 uploadForm.classList.remove('d-none');
                 loadingState.classList.add('d-none');

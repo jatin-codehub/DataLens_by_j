@@ -1,19 +1,20 @@
 import os
+import sys
 import uuid
 import shutil
+import tempfile
 from pathlib import Path
 from flask import Flask, request, jsonify, render_template, redirect, url_for, send_file
 from werkzeug.utils import secure_filename
 
 from config import Config
-from database.database import (
-    init_db,
-    save_dataset_metadata,
-    get_dataset_metadata,
-    save_analysis_summary,
-    get_latest_analysis,
-    save_report_record,
-    get_report_record
+from analysis.session_manager import (
+    create_session,
+    get_session,
+    clear_session,
+    store_session_report,
+    check_and_increment_limit,
+    cleanup_expired_sessions
 )
 from analysis.analyzer import (
     load_dataset,
@@ -37,21 +38,12 @@ app = Flask(
 )
 app.config.from_object(Config)
 
-# Ensure runtime directories exist (routed to /tmp on serverless like Vercel)
-os.makedirs(Config.UPLOAD_FOLDER, exist_ok=True)
-os.makedirs(Config.REPORTS_FOLDER, exist_ok=True)
-
-# Initialize SQLite database schema
-init_db()
+# Ensure temporary directory root exists
+os.makedirs(Config.TEMP_DIR_ROOT, exist_ok=True)
 
 def allowed_file(filename):
     """Check if the uploaded file has an allowed extension."""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in Config.ALLOWED_EXTENSIONS
-
-def get_dataset_file_path(dataset_id, file_type):
-    """Resolve file path for a stored dataset."""
-    ext = file_type.lower()
-    return os.path.join(Config.UPLOAD_FOLDER, f"{dataset_id}.{ext}")
 
 # -------------------------------------------------------------
 # Frontend Routes
@@ -59,70 +51,78 @@ def get_dataset_file_path(dataset_id, file_type):
 
 @app.route('/')
 def index():
-    """Landing Page."""
-    return render_template('index.html')
+    """Landing Page with Privacy-First positioning."""
+    cleanup_expired_sessions()
+    session_cleared = request.args.get('cleared') == 'true'
+    return render_template('index.html', session_cleared=session_cleared)
+
+@app.route('/api/index', methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
+def api_index_fallback():
+    """Fallback handler for serverless platform rewrites."""
+    return index()
 
 @app.route('/upload')
 def upload_page():
     """Upload Page."""
+    cleanup_expired_sessions()
     return render_template('upload.html')
 
-@app.route('/dashboard/<dataset_id>')
-def dashboard_page(dataset_id):
-    """Main Analytics Dashboard."""
-    meta = get_dataset_metadata(dataset_id)
-    if not meta:
-        return render_template('error.html', 
-                               error_title="Dataset Not Found", 
-                               error_message=f"No dataset found matching ID '{dataset_id}'."), 404
-    return render_template('dashboard.html', dataset=meta)
+@app.route('/privacy')
+def privacy_page():
+    """Privacy Policy Page."""
+    return render_template('privacy.html')
 
-@app.route('/report/<identifier>')
-def report_page(identifier):
-    """Report Preview and Download Page (supports both dataset_id and report_id)."""
-    dataset_id = identifier
-    meta = get_dataset_metadata(dataset_id)
-    if not meta:
-        rec = get_report_record(identifier)
-        if rec:
-            dataset_id = rec['dataset_id']
-            meta = get_dataset_metadata(dataset_id)
+@app.route('/dashboard/<session_id>')
+def dashboard_page(session_id):
+    """Main Analytics Dashboard with Privacy Session context."""
+    cleanup_expired_sessions()
+    sess = get_session(session_id)
+    if not sess:
+        return render_template(
+            'error.html', 
+            error_title="Dataset Not Found", 
+            error_message="Session Expired or Cleared. This temporary session has expired or was cleared. Dataset Not Found. Please upload your dataset again."
+        ), 404
 
-    if not meta:
-        return render_template('error.html', 
-                               error_title="Dataset Not Found", 
-                               error_message="Dataset does not exist."), 404
-    
-    # Check if a report was already generated
-    # If not, generate one automatically for convenience
-    file_path = get_dataset_file_path(dataset_id, meta['file_type'])
-    report_id = str(uuid.uuid4())[:8]
-    pdf_filename = f"DataLens_Report_{dataset_id}.pdf"
-    pdf_path = os.path.join(Config.REPORTS_FOLDER, pdf_filename)
+    return render_template('dashboard.html', session=sess, dataset=sess)
 
+@app.route('/report/<session_id>')
+def report_page(session_id):
+    """Report Preview and Download Page."""
+    cleanup_expired_sessions()
+    sess = get_session(session_id)
+    if not sess:
+        return render_template(
+            'error.html', 
+            error_title="Session Expired or Cleared", 
+            error_message="The session for this report has expired or was cleared. Please upload your dataset again."
+        ), 404
+
+    # Ensure report exists in session temp dir
+    pdf_filename = f"DataLens_Report_{session_id[:8]}.pdf"
+    pdf_path = os.path.join(sess['temp_dir'], pdf_filename)
     if not os.path.exists(pdf_path):
-        df = load_dataset(file_path)
-        summary = get_latest_analysis(dataset_id) or get_dataset_overview(df)
-        quality = check_data_quality(df)
+        summary = sess.get('summary') or get_dataset_overview(sess['df'])
+        quality = sess.get('quality') or check_data_quality(sess['df'])
         ai_res = generate_ai_insights(summary)
-        generate_pdf_report(meta, summary, quality, df, ai_res.get('insights', ''), pdf_path)
-        save_report_record(report_id, dataset_id, pdf_filename)
-        report_meta = {"id": report_id, "filename": pdf_filename}
-    else:
-        report_meta = {"id": dataset_id, "filename": pdf_filename}
+        generate_pdf_report(sess, summary, quality, sess['df'], ai_res.get('insights', ''), pdf_path)
+        store_session_report(session_id, pdf_path)
 
-    return render_template('report.html', dataset=meta, report=report_meta)
+    report_meta = {"id": session_id, "filename": pdf_filename}
+    return render_template('report.html', dataset=sess, session=sess, report=report_meta)
 
 # -------------------------------------------------------------
-# REST API Endpoints
+# REST API Endpoints (Privacy-First, Temporary Sessions)
 # -------------------------------------------------------------
 
 @app.route('/api/upload', methods=['POST'])
 def api_upload():
     """
-    Handle CSV / Excel file uploads.
-    Validates file format, size, content, calculates initial overview, and stores in SQLite.
+    Handle CSV / Excel file uploads into an isolated temporary session.
+    Protects against path traversal, oversized files, and stores NO permanent data.
     """
+    cleanup_expired_sessions()
+
     if 'file' not in request.files:
         return jsonify({"success": False, "error": "No file uploaded."}), 400
 
@@ -133,55 +133,60 @@ def api_upload():
     if not allowed_file(file.filename):
         return jsonify({"success": False, "error": "Please upload a valid CSV or Excel file (.csv, .xlsx, .xls)."}), 400
 
-    try:
-        raw_filename = secure_filename(file.filename)
-        file_ext = raw_filename.rsplit('.', 1)[1].lower()
-        dataset_id = str(uuid.uuid4())[:8]
-        save_name = f"{dataset_id}.{file_ext}"
-        saved_path = os.path.join(Config.UPLOAD_FOLDER, save_name)
-        
-        file.save(saved_path)
+    # Path traversal protection: sanitize display name and generate safe random internal path
+    raw_display_name = secure_filename(file.filename) or "dataset.csv"
+    file_ext = raw_display_name.rsplit('.', 1)[1].lower() if '.' in raw_display_name else 'csv'
+    
+    temp_dir = tempfile.mkdtemp(prefix="dl_upload_", dir=str(Config.TEMP_DIR_ROOT))
+    safe_temp_file = os.path.join(temp_dir, f"raw_data.{file_ext}")
 
-        # Validate that the file can be parsed and is not empty
-        df = load_dataset(saved_path)
+    try:
+        file.save(safe_temp_file)
+
+        # Validate that the file is not empty and can be parsed
+        df = load_dataset(safe_temp_file)
         if len(df) == 0:
-            os.remove(saved_path)
+            shutil.rmtree(temp_dir, ignore_errors=True)
             return jsonify({"success": False, "error": "The uploaded dataset does not contain usable data."}), 400
 
-        # Calculate dataset statistics & metadata
         overview = get_dataset_overview(df)
-        save_dataset_metadata(
-            dataset_id=dataset_id,
-            filename=raw_filename,
+        quality = check_data_quality(df)
+
+        # Create temporary session
+        sess = create_session(
+            filename=raw_display_name,
             file_type=file_ext,
-            rows=overview['rows'],
-            cols=overview['columns'],
-            missing=overview['missing_values'],
-            duplicates=overview['duplicate_rows']
+            df=df,
+            temp_dir=temp_dir,
+            file_path=safe_temp_file,
+            summary=overview,
+            quality=quality
         )
 
-        # Cache analysis summary
-        save_analysis_summary(dataset_id, overview)
+        session_id = sess["session_id"]
 
         return jsonify({
             "success": True,
-            "dataset_id": dataset_id,
-            "filename": raw_filename,
+            "session_id": session_id,
+            "dataset_id": session_id,
+            "filename": raw_display_name,
             "overview": overview
         }), 201
 
     except Exception as e:
-        return jsonify({"success": False, "error": f"Failed to parse dataset: {str(e)}"}), 500
+        shutil.rmtree(temp_dir, ignore_errors=True)
+        return jsonify({"success": False, "error": f"Failed to process dataset: {str(e)}"}), 400
 
 @app.route('/api/upload-sample', methods=['POST'])
 def api_upload_sample():
     """
-    Quickly load one of the built-in sample datasets (for viva / presentations).
+    Load a pre-configured sample dataset into a new isolated temporary session.
     """
+    cleanup_expired_sessions()
+
     data = request.get_json() or {}
     sample_file = data.get('filename', 'student_performance.csv')
-    
-    # Security: whitelist allowed sample datasets
+
     allowed_samples = {'student_performance.csv', 'sales_data.csv', 'employee_data.csv'}
     if sample_file not in allowed_samples:
         return jsonify({"success": False, "error": "Invalid sample dataset."}), 400
@@ -190,43 +195,82 @@ def api_upload_sample():
     if not os.path.exists(src_path):
         return jsonify({"success": False, "error": "Sample file not found on server."}), 404
 
-    dataset_id = str(uuid.uuid4())[:8]
-    dest_path = os.path.join(Config.UPLOAD_FOLDER, f"{dataset_id}.csv")
-    shutil.copyfile(src_path, dest_path)
+    temp_dir = tempfile.mkdtemp(prefix="dl_sample_", dir=str(Config.TEMP_DIR_ROOT))
+    safe_temp_file = os.path.join(temp_dir, sample_file)
+    shutil.copyfile(src_path, safe_temp_file)
 
-    df = load_dataset(dest_path)
-    overview = get_dataset_overview(df)
+    try:
+        df = load_dataset(safe_temp_file)
+        overview = get_dataset_overview(df)
+        quality = check_data_quality(df)
 
-    save_dataset_metadata(
-        dataset_id=dataset_id,
-        filename=sample_file,
-        file_type="csv",
-        rows=overview['rows'],
-        cols=overview['columns'],
-        missing=overview['missing_values'],
-        duplicates=overview['duplicate_rows']
-    )
-    save_analysis_summary(dataset_id, overview)
+        sess = create_session(
+            filename=sample_file,
+            file_type="csv",
+            df=df,
+            temp_dir=temp_dir,
+            file_path=safe_temp_file,
+            summary=overview,
+            quality=quality
+        )
+
+        session_id = sess["session_id"]
+
+        return jsonify({
+            "success": True,
+            "session_id": session_id,
+            "dataset_id": session_id,
+            "filename": sample_file,
+            "overview": overview
+        }), 200
+
+    except Exception as e:
+        shutil.rmtree(temp_dir, ignore_errors=True)
+        return jsonify({"success": False, "error": f"Unable to initialize sample session: {str(e)}"}), 500
+
+@app.route('/api/session/<session_id>/clear', methods=['POST'])
+def api_clear_session(session_id):
+    """
+    Immediately and permanently purge all temporary data and files for a session.
+    """
+    cleared = clear_session(session_id)
+    return jsonify({
+        "success": True,
+        "cleared": cleared,
+        "message": "Session cleared."
+    }), 200
+
+@app.route('/api/session/<session_id>/status', methods=['GET'])
+def api_session_status(session_id):
+    """Check session validity and TTL status."""
+    sess = get_session(session_id)
+    if not sess:
+        return jsonify({"success": False, "error": "Session expired or not found."}), 404
 
     return jsonify({
         "success": True,
-        "dataset_id": dataset_id,
-        "filename": sample_file
+        "session_id": session_id,
+        "filename": sess["filename"],
+        "active": True
     }), 200
 
-@app.route('/api/dataset/<dataset_id>', methods=['GET'])
-def api_get_dataset(dataset_id):
-    """Retrieve dataset metadata and top 15 preview rows."""
-    meta = get_dataset_metadata(dataset_id)
-    if not meta:
-        return jsonify({"success": False, "error": "Dataset not found."}), 404
+@app.route('/api/dataset/<session_id>', methods=['GET'])
+def api_get_dataset(session_id):
+    """Retrieve session metadata and top 15 preview rows from temporary session."""
+    sess = get_session(session_id)
+    if not sess:
+        return jsonify({"success": False, "error": "Session expired or invalid. Please upload your dataset again."}), 404
 
-    file_path = get_dataset_file_path(dataset_id, meta['file_type'])
-    if not os.path.exists(file_path):
-        return jsonify({"success": False, "error": "Underlying data file is missing."}), 404
-
-    df = load_dataset(file_path)
-    preview = get_preview(df, max_rows=15)
+    preview = get_preview(sess["df"], max_rows=15)
+    meta = {
+        "id": session_id,
+        "filename": sess["filename"],
+        "file_type": sess["file_type"],
+        "rows": sess["rows"],
+        "columns": sess["columns"],
+        "missing_values": sess["missing_values"],
+        "duplicate_rows": sess["duplicate_rows"]
+    }
 
     return jsonify({
         "success": True,
@@ -234,17 +278,15 @@ def api_get_dataset(dataset_id):
         "preview": preview
     }), 200
 
-@app.route('/api/dataset/<dataset_id>/statistics', methods=['GET'])
-def api_get_statistics(dataset_id):
-    """Retrieve numerical statistics for the dataset."""
-    meta = get_dataset_metadata(dataset_id)
-    if not meta:
-        return jsonify({"success": False, "error": "Dataset not found."}), 404
+@app.route('/api/dataset/<session_id>/statistics', methods=['GET'])
+def api_get_statistics(session_id):
+    """Retrieve numerical statistics for the temporary dataset."""
+    sess = get_session(session_id)
+    if not sess:
+        return jsonify({"success": False, "error": "Session expired or invalid. Please upload your dataset again."}), 404
 
-    file_path = get_dataset_file_path(dataset_id, meta['file_type'])
-    df = load_dataset(file_path)
-    col_types = detect_column_types(df)
-    stats = calculate_numerical_statistics(df, col_types['numeric'])
+    col_types = detect_column_types(sess["df"])
+    stats = calculate_numerical_statistics(sess["df"], col_types['numeric'])
 
     return jsonify({
         "success": True,
@@ -252,17 +294,15 @@ def api_get_statistics(dataset_id):
         "statistics": stats
     }), 200
 
-@app.route('/api/dataset/<dataset_id>/quality', methods=['GET'])
-def api_get_quality(dataset_id):
+@app.route('/api/dataset/<session_id>/quality', methods=['GET'])
+def api_get_quality(session_id):
     """Audit data quality (missing counts, percentages, unique values, hygiene status)."""
-    meta = get_dataset_metadata(dataset_id)
-    if not meta:
-        return jsonify({"success": False, "error": "Dataset not found."}), 404
+    sess = get_session(session_id)
+    if not sess:
+        return jsonify({"success": False, "error": "Session expired or invalid. Please upload your dataset again."}), 404
 
-    file_path = get_dataset_file_path(dataset_id, meta['file_type'])
-    df = load_dataset(file_path)
-    quality = check_data_quality(df)
-    cleaning = get_cleaning_summary(df)
+    quality = sess.get("quality") or check_data_quality(sess["df"])
+    cleaning = get_cleaning_summary(sess["df"])
 
     return jsonify({
         "success": True,
@@ -270,20 +310,16 @@ def api_get_quality(dataset_id):
         "cleaning": cleaning
     }), 200
 
-@app.route('/api/dataset/<dataset_id>/charts', methods=['GET'])
-def api_get_charts(dataset_id):
+@app.route('/api/dataset/<session_id>/charts', methods=['GET'])
+def api_get_charts(session_id):
     """Generate responsive Plotly visualizations."""
-    meta = get_dataset_metadata(dataset_id)
-    if not meta:
-        return jsonify({"success": False, "error": "Dataset not found."}), 404
+    sess = get_session(session_id)
+    if not sess:
+        return jsonify({"success": False, "error": "Session expired or invalid. Please upload your dataset again."}), 404
 
     try:
-        file_path = get_dataset_file_path(dataset_id, meta['file_type'])
-        if not os.path.exists(file_path):
-            return jsonify({"success": False, "error": "Data file not found on disk."}), 404
-        df = load_dataset(file_path)
-        col_types = detect_column_types(df)
-        charts = generate_visualizations(df, col_types)
+        col_types = detect_column_types(sess["df"])
+        charts = generate_visualizations(sess["df"], col_types)
 
         return jsonify({
             "success": True,
@@ -292,131 +328,151 @@ def api_get_charts(dataset_id):
     except Exception as e:
         return jsonify({"success": False, "error": f"Failed to generate charts: {str(e)}"}), 500
 
-@app.route('/api/dataset/<dataset_id>/insights', methods=['POST'])
-def api_get_insights(dataset_id):
+@app.route('/api/dataset/<session_id>/insights', methods=['POST'])
+def api_get_insights(session_id):
     """Generate or retrieve AI insights for the dataset summary."""
-    meta = get_dataset_metadata(dataset_id)
-    if not meta:
-        return jsonify({"success": False, "error": "Dataset not found."}), 404
+    sess = get_session(session_id)
+    if not sess:
+        return jsonify({"success": False, "error": "Session expired or invalid. Please upload your dataset again."}), 404
 
-    summary = get_latest_analysis(dataset_id)
-    if not summary:
-        file_path = get_dataset_file_path(dataset_id, meta['file_type'])
-        df = load_dataset(file_path)
-        summary = get_dataset_overview(df)
-        save_analysis_summary(dataset_id, summary)
+    # Abuse protection check
+    if not check_and_increment_limit(session_id, 'ai'):
+        return jsonify({
+            "success": False,
+            "error": "AI query quota reached for this session to prevent abuse."
+        }), 429
 
+    summary = sess.get('summary') or get_dataset_overview(sess["df"])
     result = generate_ai_insights(summary)
     return jsonify(result), 200
 
-@app.route('/api/dataset/<dataset_id>/ask', methods=['POST'])
-def api_ask_question(dataset_id):
+@app.route('/api/dataset/<session_id>/ask', methods=['POST'])
+def api_ask_question(session_id):
     """Answer user questions safely using deterministic Pandas calculations."""
-    meta = get_dataset_metadata(dataset_id)
-    if not meta:
-        return jsonify({"success": False, "error": "Dataset not found."}), 404
+    sess = get_session(session_id)
+    if not sess:
+        return jsonify({"success": False, "error": "Session expired or invalid. Please upload your dataset again."}), 404
+
+    # Abuse protection check
+    if not check_and_increment_limit(session_id, 'ask'):
+        return jsonify({
+            "success": False,
+            "error": "Query quota reached for this session to prevent abuse."
+        }), 429
 
     req_data = request.get_json() or {}
     question = req_data.get('question', '').strip()
     if not question:
         return jsonify({"success": False, "error": "Question cannot be empty."}), 400
 
-    file_path = get_dataset_file_path(dataset_id, meta['file_type'])
-    df = load_dataset(file_path)
-    ans = answer_dataset_question(df, question)
+    ans = answer_dataset_question(sess["df"], question)
 
     return jsonify({
         "success": True,
         **ans
     }), 200
 
-@app.route('/api/dataset/<dataset_id>/report', methods=['POST'])
-def api_generate_report(dataset_id):
-    """Generate a ReportLab PDF report and record it in SQLite."""
-    meta = get_dataset_metadata(dataset_id)
-    if not meta:
-        return jsonify({"success": False, "error": "Dataset not found."}), 404
+@app.route('/api/dataset/<session_id>/report', methods=['POST'])
+def api_generate_report(session_id):
+    """Generate a ReportLab PDF report inside the session's temporary directory."""
+    sess = get_session(session_id)
+    if not sess:
+        return jsonify({"success": False, "error": "Session expired or invalid. Please upload your dataset again."}), 404
 
     try:
-        file_path = get_dataset_file_path(dataset_id, meta['file_type'])
-        df = load_dataset(file_path)
-        summary = get_latest_analysis(dataset_id) or get_dataset_overview(df)
-        quality = check_data_quality(df)
+        df = sess["df"]
+        summary = sess.get('summary') or get_dataset_overview(df)
+        quality = sess.get('quality') or check_data_quality(df)
 
         ai_res = generate_ai_insights(summary)
         ai_text = ai_res.get('insights', '')
 
-        report_id = str(uuid.uuid4())[:8]
-        report_filename = f"DataLens_Report_{dataset_id}.pdf"
-        report_path = os.path.join(Config.REPORTS_FOLDER, report_filename)
+        pdf_filename = f"DataLens_Report_{session_id[:8]}.pdf"
+        report_path = os.path.join(sess["temp_dir"], pdf_filename)
 
-        generate_pdf_report(meta, summary, quality, df, ai_text, report_path)
-        save_report_record(report_id, dataset_id, report_filename)
+        generate_pdf_report(sess, summary, quality, df, ai_text, report_path)
+        store_session_report(session_id, report_path)
 
         return jsonify({
             "success": True,
-            "report_id": report_id,
-            "filename": report_filename
+            "session_id": session_id,
+            "report_id": session_id,
+            "filename": pdf_filename
         }), 201
 
     except Exception as e:
         return jsonify({"success": False, "error": f"Unable to generate the report: {str(e)}"}), 500
 
-@app.route('/api/report/<report_id>/download', methods=['GET'])
-def api_download_report(report_id):
-    """Download a generated PDF report."""
-    rec = get_report_record(report_id)
-    if not rec:
-        # Fallback to direct filename check if report_id matches dataset_id
-        fallback_filename = f"DataLens_Report_{report_id}.pdf"
-        fallback_path = os.path.join(Config.REPORTS_FOLDER, fallback_filename)
-        if os.path.exists(fallback_path):
-            return send_file(fallback_path, as_attachment=True, download_name=fallback_filename)
-        return render_template('error.html', 
-                               error_title="Report Not Found", 
-                               error_message="The requested PDF report was not found. Please regenerate it."), 404
+@app.route('/api/report/<session_id>/download', methods=['GET'])
+def api_download_report(session_id):
+    """Download a generated PDF report from the session's temporary storage."""
+    sess = get_session(session_id)
+    if not sess:
+        return render_template(
+            'error.html', 
+            error_title="Report Not Found", 
+            error_message="The session for this report has expired or was cleared. Please upload your dataset again."
+        ), 404
 
-    pdf_path = os.path.join(Config.REPORTS_FOLDER, rec['filename'])
-    if not os.path.exists(pdf_path):
-        return render_template('error.html', 
-                               error_title="Report File Missing", 
-                               error_message="The PDF file is no longer available on disk."), 404
+    report_path = sess.get('report_path')
+    if not report_path or not os.path.exists(report_path):
+        # Auto-generate if missing
+        try:
+            pdf_filename = f"DataLens_Report_{session_id[:8]}.pdf"
+            report_path = os.path.join(sess["temp_dir"], pdf_filename)
+            summary = sess.get('summary') or get_dataset_overview(sess["df"])
+            quality = sess.get('quality') or check_data_quality(sess["df"])
+            ai_res = generate_ai_insights(summary)
+            generate_pdf_report(sess, summary, quality, sess["df"], ai_res.get('insights', ''), report_path)
+            store_session_report(session_id, report_path)
+        except Exception as e:
+            return render_template(
+                'error.html', 
+                error_title="Report Generation Failed", 
+                error_message=f"Could not build report: {str(e)}"
+            ), 500
 
-    return send_file(pdf_path, as_attachment=True, download_name=rec['filename'])
+    return send_file(report_path, as_attachment=True, download_name=os.path.basename(report_path))
 
 # -------------------------------------------------------------
-# Global Error Handlers
+# Global Error Handlers (Predictable JSON for API, HTML for Web)
 # -------------------------------------------------------------
 
 @app.errorhandler(413)
 def request_entity_too_large(error):
-    """Handle files exceeding maximum size limit (10MB)."""
+    """Handle files exceeding maximum size limit."""
+    limit_mb = Config.MAX_UPLOAD_MB
     if request.path.startswith('/api/'):
-        return jsonify({"success": False, "error": "File size exceeds the 10 MB limit."}), 413
-    return render_template('error.html', 
-                           error_title="File Too Large", 
-                           error_message="The uploaded file exceeds the maximum 10 MB limit."), 413
+        return jsonify({"success": False, "error": f"File size exceeds the {limit_mb} MB limit."}), 413
+    return render_template(
+        'error.html', 
+        error_title="File Too Large", 
+        error_message=f"The uploaded file exceeds the maximum {limit_mb} MB limit."
+    ), 413
 
 @app.errorhandler(404)
 def not_found(error):
     if request.path.startswith('/api/'):
         return jsonify({"success": False, "error": "Endpoint not found."}), 404
-    return render_template('error.html', 
-                           error_title="Page Not Found", 
-                           error_message="The page you requested does not exist."), 404
+    return render_template(
+        'error.html', 
+        error_title="Page Not Found", 
+        error_message="The page you requested does not exist or your temporary session has expired."
+    ), 404
 
 @app.errorhandler(500)
 def internal_error(error):
     if request.path.startswith('/api/'):
         return jsonify({"success": False, "error": "An internal server error occurred."}), 500
-    return render_template('error.html', 
-                           error_title="Server Error", 
-                           error_message="A server issue occurred while processing your request."), 500
+    return render_template(
+        'error.html', 
+        error_title="Server Error", 
+        error_message="A server issue occurred while processing your request."
+    ), 500
 
 # -------------------------------------------------------------
 # Application Runner
 # -------------------------------------------------------------
 
 if __name__ == '__main__':
-    # Run development server on port 5000
     app.run(host='127.0.0.1', port=5000, debug=True)

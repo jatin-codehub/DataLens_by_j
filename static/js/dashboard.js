@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setupAskData();
     setupPdfGenerator();
+    setupClearSession();
 });
 
 // Helper: Format Markdown to clean, readable HTML
@@ -338,7 +339,8 @@ function setupPdfGenerator() {
             const data = await res.json();
 
             if (data.success) {
-                downloadLink.href = `/api/report/${data.report_id}/download`;
+                const repId = data.session_id || data.report_id;
+                downloadLink.href = `/api/report/${repId}/download`;
                 loadingState.classList.add('d-none');
                 successState.classList.remove('d-none');
             } else {
@@ -351,3 +353,26 @@ function setupPdfGenerator() {
         }
     });
 }
+
+// 8. Setup Clear Session Handler
+function setupClearSession() {
+    const confirmBtn = document.getElementById('confirmClearSessionBtn');
+    if (!confirmBtn) return;
+
+    confirmBtn.addEventListener('click', async () => {
+        confirmBtn.disabled = true;
+        confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Clearing...';
+
+        const sid = document.body.dataset.datasetId;
+        try {
+            await fetch(`/api/session/${sid}/clear`, { method: 'POST' });
+        } catch (e) {
+            // Ignore error if cleanup network fails
+        } finally {
+            sessionStorage.clear();
+            localStorage.removeItem('datalens_session');
+            window.location.href = '/?cleared=true';
+        }
+    });
+}
+

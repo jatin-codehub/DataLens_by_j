@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ dataset.filename }} — DataLens</title>
+    <title>{{ session.filename }} — DataLens</title>
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Lucide & Bootstrap Icons -->
@@ -13,7 +13,7 @@
     <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
-<body data-dataset-id="{{ dataset.id }}">
+<body data-dataset-id="{{ session.session_id }}">
 
     <!-- 64px Main Navigation -->
     <header class="app-navbar d-flex align-items-center">
@@ -24,23 +24,24 @@
                     <span>DataLens</span>
                 </a>
                 <span class="text-muted d-none d-md-inline" style="font-size: 0.9rem;">/</span>
-                <span class="text-secondary d-none d-md-inline text-truncate" style="max-width: 280px; font-size: 0.88rem; font-weight: 500;">
-                    {{ dataset.filename }}
+                <span class="text-secondary d-none d-md-inline text-truncate" style="max-width: 260px; font-size: 0.88rem; font-weight: 500;">
+                    {{ session.filename }}
                 </span>
             </div>
 
             <nav class="d-none d-lg-flex align-items-center gap-1">
+                <a class="nav-link" href="#overview">Overview</a>
                 <a class="nav-link" href="#preview">Preview</a>
-                <a class="nav-link" href="#quality">Data Quality</a>
-                <a class="nav-link" href="#charts">Visual Analysis</a>
-                <a class="nav-link" href="#findings">Key Findings</a>
-                <a class="nav-link" href="#ask">Ask Your Data</a>
+                <a class="nav-link" href="#statistics">Statistics</a>
+                <a class="nav-link" href="#charts">Charts</a>
+                <a class="nav-link" href="#insights">AI Insights</a>
+                <a class="nav-link" href="#ask">Ask</a>
             </nav>
 
             <div class="d-flex align-items-center gap-2">
-                <a href="/upload" class="btn btn-secondary-custom btn-sm-custom">
-                    Upload Dataset
-                </a>
+                <button class="btn btn-outline-danger btn-sm-custom" data-bs-toggle="modal" data-bs-target="#clearSessionModal">
+                    <i data-lucide="trash-2" style="width: 13px; height: 13px; vertical-align: -2px;" class="me-1"></i> Clear Session
+                </button>
                 <button id="generatePdfBtn" class="btn btn-primary btn-sm-custom">
                     <i data-lucide="file-down" style="width: 14px; height: 14px; vertical-align: -2px; margin-right: 4px;"></i> Generate Report
                 </button>
@@ -49,88 +50,81 @@
     </header>
 
     <!-- Main Dashboard Container -->
-    <main class="container-fluid px-lg-4 py-4">
+    <main class="container-fluid px-lg-4 py-3">
 
-        <!-- 1. Dataset Header -->
-        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center pb-3 mb-3 border-bottom gap-2">
+        <!-- 1. Privacy Session Banner (Section 16) -->
+        <div class="p-3 mb-3 border rounded-2 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 bg-white" style="border-color: #E2E8F0;">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <span class="badge bg-light text-primary border px-2 py-1" style="font-size: 0.8rem; font-weight: 600;">
+                    <i data-lucide="lock" style="width: 12px; height: 12px; vertical-align: -2px;"></i> Private Session
+                </span>
+                <span class="text-secondary" style="font-size: 0.84rem;">
+                    Temporary processing &bull; No account required &bull; Auto-purged after <strong>{{ session.ttl_minutes or 30 }} minutes</strong> of inactivity
+                </span>
+            </div>
             <div>
-                <h1 style="font-size: 1.35rem; font-weight: 700; margin-bottom: 2px;">{{ dataset.filename }}</h1>
+                <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#clearSessionModal" style="font-size: 0.78rem;">
+                    <i data-lucide="trash-2" style="width: 12px; height: 12px; vertical-align: -2px;"></i> Clear Session Now
+                </button>
+            </div>
+        </div>
+
+        <!-- 2. Dataset Overview Header & Metrics (Section 19) -->
+        <div id="overview" class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center pb-2 mb-3 border-bottom gap-2">
+            <div>
+                <h1 style="font-size: 1.35rem; font-weight: 700; margin-bottom: 2px;">{{ session.filename }}</h1>
                 <div class="text-secondary" style="font-size: 0.82rem;">
-                    Format: <span class="text-uppercase fw-semibold text-dark">{{ dataset.file_type }}</span> &bull; 
-                    Uploaded on {{ dataset.uploaded_at }} &bull; 
-                    ID: <code>{{ dataset.id }}</code>
+                    Format: <span class="text-uppercase fw-semibold text-dark">{{ session.file_type }}</span> &bull; 
+                    Isolated Session: <code style="font-size: 0.76rem;">{{ session.session_id[:12] }}...</code>
                 </div>
             </div>
             <div class="d-flex align-items-center gap-2">
-                <span class="badge-clean badge-good">Validated</span>
+                <span class="badge-clean badge-good"><i data-lucide="shield-check" style="width: 12px; height: 12px;"></i> Verified Temporary</span>
                 <a href="#ask" class="btn btn-secondary-custom btn-sm-custom">
                     Ask Data
                 </a>
             </div>
         </div>
 
-        <!-- 2. Summary Metric Cards (Clean, No Giant Icons, No Gradients) -->
+        <!-- Summary Metric Cards -->
         <div class="row g-2 section-gap">
             <div class="col-6 col-md-3">
                 <div class="metric-card">
                     <div class="metric-label">TOTAL RECORDS</div>
-                    <div class="metric-value">{{ "{:,}".format(dataset.rows) }}</div>
+                    <div class="metric-value">{{ "{:,}".format(session.rows) }}</div>
                 </div>
             </div>
             <div class="col-6 col-md-3">
                 <div class="metric-card">
                     <div class="metric-label">TOTAL COLUMNS</div>
-                    <div class="metric-value">{{ dataset.columns }}</div>
+                    <div class="metric-value">{{ session.columns }}</div>
                 </div>
             </div>
             <div class="col-6 col-md-3">
                 <div class="metric-card">
                     <div class="metric-label">MISSING VALUES</div>
-                    <div class="metric-value" style="color: {% if dataset.missing_values > 0 %}var(--warning){% else %}var(--success){% endif %};">
-                        {{ "{:,}".format(dataset.missing_values) }}
+                    <div class="metric-value" style="color: {% if session.missing_values > 0 %}var(--warning){% else %}var(--success){% endif %};">
+                        {{ "{:,}".format(session.missing_values) }}
                     </div>
                 </div>
             </div>
             <div class="col-6 col-md-3">
                 <div class="metric-card">
                     <div class="metric-label">DUPLICATE ROWS</div>
-                    <div class="metric-value" style="color: {% if dataset.duplicate_rows > 0 %}var(--danger){% else %}var(--success){% endif %};">
-                        {{ "{:,}".format(dataset.duplicate_rows) }}
+                    <div class="metric-value" style="color: {% if session.duplicate_rows > 0 %}var(--danger){% else %}var(--success){% endif %};">
+                        {{ "{:,}".format(session.duplicate_rows) }}
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- 3. Dataset Preview Section -->
-        <div class="custom-card p-3 section-gap" id="preview">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <div>
-                    <h2 style="font-size: 1rem; font-weight: 700; margin-bottom: 2px;">Dataset preview</h2>
-                    <span class="text-secondary" style="font-size: 0.8rem;">Showing first 15 records with detected data types</span>
-                </div>
-                <span class="badge-clean badge-neutral" id="previewCountBadge">Loading...</span>
-            </div>
-            
-            <div class="table-responsive border rounded-2" style="max-height: 380px;">
-                <table class="custom-table table mb-0" id="previewTable">
-                    <thead>
-                        <tr id="previewTableHead"></tr>
-                    </thead>
-                    <tbody id="previewTableBody">
-                        <tr><td class="text-center py-4 text-secondary" colspan="10">Loading rows...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- 4. Data Quality Section -->
+        <!-- Data Quality Audit -->
         <div class="custom-card p-3 section-gap" id="quality">
             <div class="mb-3">
-                <h2 style="font-size: 1rem; font-weight: 700; margin-bottom: 2px;">Data quality</h2>
-                <span class="text-secondary" style="font-size: 0.8rem;">Inspection of column completeness, null counts, and uniqueness</span>
+                <h2 style="font-size: 1rem; font-weight: 700; margin-bottom: 2px;">Data Quality Audit</h2>
+                <span class="text-secondary" style="font-size: 0.8rem;">Column completeness, null percentages, and uniqueness</span>
             </div>
 
-            <!-- Cleaning Notice Banner -->
             <div id="cleaningNotice" class="alert alert-light border rounded-2 p-2 px-3 mb-3 d-none" style="font-size: 0.84rem;">
                 <div class="d-flex align-items-center gap-2">
                     <i data-lucide="info" style="width: 16px; height: 16px; color: var(--primary);"></i>
@@ -157,11 +151,60 @@
             </div>
         </div>
 
-        <!-- 5. Visual Analysis Section (Useful Charts) -->
+        <!-- 3. Data Preview Section -->
+        <div class="custom-card p-3 section-gap" id="preview">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h2 style="font-size: 1rem; font-weight: 700; margin-bottom: 2px;">Dataset Preview</h2>
+                    <span class="text-secondary" style="font-size: 0.8rem;">Showing first 15 records with detected data types</span>
+                </div>
+                <span class="badge-clean badge-neutral" id="previewCountBadge">Loading...</span>
+            </div>
+            
+            <div class="table-responsive border rounded-2" style="max-height: 380px;">
+                <table class="custom-table table mb-0" id="previewTable">
+                    <thead>
+                        <tr id="previewTableHead"></tr>
+                    </thead>
+                    <tbody id="previewTableBody">
+                        <tr><td class="text-center py-4 text-secondary" colspan="10">Loading rows...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 4. Statistical Summary Section -->
+        <div class="custom-card p-3 section-gap" id="statistics">
+            <div class="mb-3">
+                <h2 style="font-size: 1rem; font-weight: 700; margin-bottom: 2px;">Statistical Summary</h2>
+                <span class="text-secondary" style="font-size: 0.8rem;">Descriptive parameters for numerical dimensions</span>
+            </div>
+
+            <div class="table-responsive border rounded-2">
+                <table class="custom-table table mb-0" id="statsTable">
+                    <thead>
+                        <tr>
+                            <th>Column</th>
+                            <th class="text-end">Count</th>
+                            <th class="text-end">Mean</th>
+                            <th class="text-end">Median</th>
+                            <th class="text-end">Min</th>
+                            <th class="text-end">Max</th>
+                            <th class="text-end">Std Dev</th>
+                        </tr>
+                    </thead>
+                    <tbody id="statsTableBody">
+                        <tr><td class="text-center py-4 text-secondary" colspan="7">Loading statistics...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 5. Visual Analysis Section (Interactive Charts) -->
         <div class="custom-card p-3 section-gap" id="charts">
             <div class="mb-3">
-                <h2 style="font-size: 1rem; font-weight: 700; margin-bottom: 2px;">Visual analysis</h2>
-                <span class="text-secondary" style="font-size: 0.8rem;">Automated charts adapted to column distributions and relationships</span>
+                <h2 style="font-size: 1rem; font-weight: 700; margin-bottom: 2px;">Visual Analysis</h2>
+                <span class="text-secondary" style="font-size: 0.8rem;">Automated charts adapted to distributions, categories, and correlations</span>
             </div>
 
             <div class="row g-3" id="chartsContainer">
@@ -172,15 +215,15 @@
             </div>
         </div>
 
-        <!-- 6. Key Findings Section (Non-Marketing, Factual) -->
-        <div class="custom-card p-3 section-gap" id="findings">
+        <!-- 6. Key Findings & AI Insights Section -->
+        <div class="custom-card p-3 section-gap" id="insights">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <div>
-                    <h2 style="font-size: 1rem; font-weight: 700; margin-bottom: 2px;">Key findings</h2>
-                    <span class="text-secondary" style="font-size: 0.8rem;" id="aiModeIndicator">Concise observations grounded in calculated values</span>
+                    <h2 style="font-size: 1rem; font-weight: 700; margin-bottom: 2px;">Key Findings & AI Insights</h2>
+                    <span class="text-secondary" style="font-size: 0.8rem;" id="aiModeIndicator">Concise observations grounded strictly in calculated statistics</span>
                 </div>
                 <button id="regenerateAiBtn" class="btn btn-secondary-custom btn-sm-custom">
-                    Refresh
+                    <i data-lucide="refresh-cw" style="width: 12px; height: 12px;"></i> Refresh
                 </button>
             </div>
 
@@ -196,14 +239,14 @@
         <!-- 7. Ask Your Data Section -->
         <div class="custom-card p-3 section-gap" id="ask">
             <div class="mb-3">
-                <h2 style="font-size: 1rem; font-weight: 700; margin-bottom: 2px;">Ask your data</h2>
-                <span class="text-secondary" style="font-size: 0.8rem;">Evaluate questions evaluated directly from dataset records</span>
+                <h2 style="font-size: 1rem; font-weight: 700; margin-bottom: 2px;">Ask Your Data</h2>
+                <span class="text-secondary" style="font-size: 0.8rem;">Deterministic answers calculated directly via Pandas with optional AI explanation</span>
             </div>
 
             <!-- Input Query Form -->
             <form id="askForm" class="mb-2">
                 <div class="query-input-group">
-                    <input type="text" id="userQuestion" class="query-input" placeholder="Ask a question about your dataset..." required autocomplete="off">
+                    <input type="text" id="userQuestion" class="query-input" placeholder="Ask a question about your dataset (e.g. 'What is the average sales?')..." required autocomplete="off">
                     <button class="btn btn-primary btn-sm-custom" type="submit" id="askBtn">
                         Query
                     </button>
@@ -213,6 +256,7 @@
             <!-- Exact Suggested Questions -->
             <div class="d-flex flex-wrap gap-1 mb-3" id="questionChips">
                 <button type="button" class="chip-btn" onclick="askPreset('What is the average sales?')">What is the average sales?</button>
+                <button type="button" class="chip-btn" onclick="askPreset('What is the total revenue?')">What is the total revenue?</button>
                 <button type="button" class="chip-btn" onclick="askPreset('Which region has the highest sales?')">Which region has the highest sales?</button>
                 <button type="button" class="chip-btn" onclick="askPreset('How many missing values are present?')">How many missing values are present?</button>
                 <button type="button" class="chip-btn" onclick="askPreset('What is the median rating?')">What is the median rating?</button>
@@ -230,6 +274,22 @@
                     </div>
                     <div id="answerText" class="text-dark" style="font-size: 0.88rem;"></div>
                 </div>
+            </div>
+        </div>
+
+        <!-- 8. Export & Session Management Actions (Bottom) -->
+        <div class="custom-card p-4 section-gap text-center" style="background-color: #F8FAFC;">
+            <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 6px;">Ready to export or complete your session?</h3>
+            <p class="text-secondary mx-auto mb-4" style="max-width: 540px; font-size: 0.86rem;">
+                Download your visual PDF summary report or immediately clear this temporary session.
+            </p>
+            <div class="d-flex justify-content-center gap-2 flex-wrap">
+                <button class="btn btn-primary" onclick="document.getElementById('generatePdfBtn').click()">
+                    <i data-lucide="file-down" style="width: 14px; height: 14px; vertical-align: -2px;" class="me-1"></i> Generate PDF Report
+                </button>
+                <button class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#clearSessionModal">
+                    <i data-lucide="trash-2" style="width: 14px; height: 14px; vertical-align: -2px;" class="me-1"></i> Clear Session
+                </button>
             </div>
         </div>
 
@@ -257,6 +317,36 @@
                             Download PDF
                         </a>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Clear Session Confirmation Modal (Section 7) -->
+    <div class="modal fade" id="clearSessionModal" tabindex="-1" aria-labelledby="clearSessionModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content custom-card p-3 border-0 shadow">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold text-danger" id="clearSessionModalLabel" style="font-size: 1.1rem;">
+                        <i data-lucide="alert-triangle" style="width: 18px; height: 18px; vertical-align: -3px;" class="me-1"></i> Clear Session
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body py-3">
+                    <p class="text-dark mb-2" style="font-size: 0.92rem; font-weight: 600;">
+                        Clear this session and delete temporary analysis data?
+                    </p>
+                    <p class="text-secondary mb-0" style="font-size: 0.82rem;">
+                        All uploaded records, calculations, and generated charts for this dataset will be permanently deleted from server memory and temporary storage.
+                    </p>
+                </div>
+                <div class="modal-footer border-0 pt-0 d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-secondary-custom btn-sm-custom" data-bs-dismiss="modal">
+                        Cancel
+                    </button>
+                    <button type="button" id="confirmClearSessionBtn" class="btn btn-danger btn-sm-custom">
+                        Clear Session
+                    </button>
                 </div>
             </div>
         </div>

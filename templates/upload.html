@@ -33,8 +33,12 @@
                 
                 <!-- Page Title -->
                 <div class="mb-4 text-center">
+                    <span class="badge bg-light text-primary border mb-2 px-2 py-1" style="font-size: 0.78rem; font-weight: 600;">
+                        <i data-lucide="shield-check" style="width: 12px; height: 12px; vertical-align: -2px;"></i> Private Session
+                    </span>
                     <h1 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 4px;">Upload dataset</h1>
-                    <p class="text-secondary" style="font-size: 0.88rem;">Select a CSV or Excel file to analyze. Maximum file size is 10 MB.</p>
+                    <p class="text-secondary" style="font-size: 0.88rem;">Select a CSV or Excel file to analyze. Maximum file size is 25 MB.</p>
+                    <p class="text-muted" style="font-size: 0.78rem;">Files are processed temporarily in an isolated workspace. No account or permanent library created.</p>
                 </div>
 
                 <!-- Error Alert Box -->
@@ -127,7 +131,8 @@
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    window.location.href = `/dashboard/${data.dataset_id}`;
+                    const sid = data.session_id || data.dataset_id;
+                    window.location.href = `/dashboard/${sid}`;
                 } else {
                     document.getElementById('errorAlert').classList.remove('d-none');
                     document.getElementById('errorMessage').textContent = data.error || 'Failed to load sample.';
